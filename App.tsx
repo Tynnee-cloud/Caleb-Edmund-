@@ -14,7 +14,8 @@ import {
   TrendingUp,
   CreditCard,
   ExternalLink,
-  Settings
+  Settings,
+  AlertCircle
 } from 'lucide-react';
 import { getStore, addBusiness, addSlot, createBooking, updateBookingStatus, saveStore } from './store';
 import { Business, Slot, Booking, UserRole } from './types';
@@ -47,7 +48,7 @@ const LandingPage: React.FC = () => {
         Never lose money to <span className="text-blue-600">no-shows</span> again.
       </h1>
       <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-        Require a small refundable attendance bond for every booking. Show up? Refunded. No-show? You get paid.
+        Require a small refundable attendance bond via <span className="font-bold text-blue-500">Paystack</span>. Show up? Refunded. No-show? You get paid.
       </p>
       <div className="flex flex-col sm:flex-row justify-center gap-4">
         <button 
@@ -70,7 +71,7 @@ const LandingPage: React.FC = () => {
 const BusinessSignup: React.FC = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    name: '', type: 'Barber', location: '', email: '', payoutDetails: ''
+    name: '', type: 'Barber', location: '', email: '', payoutDetails: '', paystackPublicKey: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -83,7 +84,7 @@ const BusinessSignup: React.FC = () => {
   return (
     <div className="max-w-md mx-auto py-10 px-4">
       <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
-        <h2 className="text-2xl font-bold mb-6">Register Business</h2>
+        <h2 className="text-2xl font-bold mb-6 text-gray-900">Register Business</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
@@ -107,9 +108,20 @@ const BusinessSignup: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Email / Phone</label>
             <input required type="text" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="contact@business.com" />
           </div>
+          <div className="pt-2">
+            <label className="block text-sm font-bold text-blue-600 mb-1">Paystack Public Key (Optional for Demo)</label>
+            <input 
+              type="text" 
+              value={form.paystackPublicKey} 
+              onChange={e => setForm({...form, paystackPublicKey: e.target.value})} 
+              className="w-full p-3 bg-blue-50 border border-blue-100 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono" 
+              placeholder="pk_test_..." 
+            />
+            <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">Leave empty to use Platform Test Keys</p>
+          </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Payout Details (Bank or Mobile Money)</label>
-            <input required type="text" value={form.payoutDetails} onChange={e => setForm({...form, payoutDetails: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="Acc: 1234567890" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Payout Account</label>
+            <input required type="text" value={form.payoutDetails} onChange={e => setForm({...form, payoutDetails: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="Bank Name / Mobile Money Number" />
           </div>
           <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all mt-4">
             Create Business Profile
@@ -166,6 +178,11 @@ const BusinessDashboard: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">{business.name}</h1>
           <p className="text-gray-500">{business.type} • {business.location}</p>
+          {business.paystackPublicKey && (
+            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest mt-2 inline-block">
+              Paystack Connected
+            </span>
+          )}
         </div>
         <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl w-full md:w-auto">
           <p className="text-sm font-semibold text-blue-800 mb-1">Share Booking Link:</p>
@@ -203,7 +220,7 @@ const BusinessDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
-          <div className="bg-white p-6 rounded-2xl border border-gray-200">
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
             <h3 className="text-lg font-bold mb-4 flex items-center"><Plus className="mr-2 w-5 h-5 text-blue-600" /> Create New Slot</h3>
             <form onSubmit={handleAddSlot} className="space-y-4">
               <div>
@@ -224,7 +241,7 @@ const BusinessDashboard: React.FC = () => {
         </div>
 
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
             <div className="p-6 border-b border-gray-100">
               <h3 className="text-lg font-bold">Active Bookings</h3>
             </div>
@@ -238,7 +255,7 @@ const BusinessDashboard: React.FC = () => {
                       <p className="font-bold text-lg">{b.customerName}</p>
                       <p className="text-sm text-gray-500">{b.customerEmail}</p>
                       <div className="flex items-center text-xs mt-1 text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded w-fit">
-                        Bond Paid: ${b.amount}
+                        Bond via Paystack: ${b.amount}
                       </div>
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
@@ -261,7 +278,7 @@ const BusinessDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mt-8">
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mt-8 shadow-sm">
             <div className="p-6 border-b border-gray-100">
               <h3 className="text-lg font-bold">Available Slots</h3>
             </div>
@@ -319,105 +336,153 @@ const BookingPage: React.FC = () => {
 
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [customer, setCustomer] = useState({ name: '', email: '' });
-  const [isPaying, setIsPaying] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   if (!business) return <div className="p-10 text-center">Business not found.</div>;
 
-  const handleBooking = () => {
-    if (!selectedSlot) return;
-    setIsPaying(true);
+  const handlePaystackPayment = () => {
+    if (!selectedSlot || !customer.name || !customer.email) return;
     
-    // Simulate payment delay
-    setTimeout(() => {
-      const slot = slots.find(s => s.id === selectedSlot)!;
-      createBooking({
-        id: Math.random().toString(36).substr(2, 9),
-        slotId: slot.id,
-        businessId: business.id,
-        customerName: customer.name,
-        customerEmail: customer.email,
-        status: 'paid',
-        amount: slot.bondAmount,
-        timestamp: Date.now()
-      });
-      setIsPaying(false);
-      alert('Booking Confirmed! Your bond is secure.');
-      window.location.href = '/#/';
-    }, 2000);
+    const slot = slots.find(s => s.id === selectedSlot)!;
+    setIsProcessing(true);
+
+    // Platform fallback test key if business hasn't set one
+    const publicKey = business.paystackPublicKey || 'pk_test_4e7f8f9d0c1b2a3d4e5f6g7h8i9j0k1l2m3n'; 
+
+    // @ts-ignore
+    const handler = window.PaystackPop.setup({
+      key: publicKey,
+      email: customer.email,
+      amount: slot.bondAmount * 100, // Paystack takes amount in kobo/cents
+      currency: 'USD', // Simplified for demo
+      ref: 'BOND_' + Math.floor((Math.random() * 1000000000) + 1),
+      onClose: () => {
+        setIsProcessing(false);
+        alert('Transaction was not completed.');
+      },
+      callback: (response: any) => {
+        // Payment successful
+        createBooking({
+          id: Math.random().toString(36).substr(2, 9),
+          slotId: slot.id,
+          businessId: business.id,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          status: 'paid',
+          amount: slot.bondAmount,
+          timestamp: Date.now(),
+          paystackReference: response.reference
+        });
+        setIsProcessing(false);
+        alert(`Booking Confirmed! Reference: ${response.reference}`);
+        window.location.href = '/#/';
+      }
+    });
+
+    handler.openIframe();
   };
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-4">
-      <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
-        <div className="bg-gray-900 p-8 text-white">
-          <h1 className="text-3xl font-bold mb-2">{business.name}</h1>
-          <p className="opacity-80">{business.type} • {business.location}</p>
+      <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-xl">
+        <div className="bg-gradient-to-r from-gray-900 to-blue-900 p-8 text-white">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{business.name}</h1>
+              <p className="opacity-80">{business.type} • {business.location}</p>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] bg-blue-500/30 px-2 py-1 rounded font-bold uppercase tracking-widest border border-blue-400/30">
+                Secure Checkout
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="p-8">
-          <h2 className="text-xl font-bold mb-6">1. Select Appointment Time</h2>
+          <h2 className="text-xl font-bold mb-6 flex items-center text-gray-800">
+            <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3 text-sm">1</span>
+            Select Appointment Time
+          </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
             {slots.length === 0 ? (
-              <p className="col-span-full text-gray-400">No available slots at this time.</p>
+              <p className="col-span-full text-gray-400 py-4 italic text-center">No available slots at this time.</p>
             ) : (
               slots.map(s => (
                 <button 
                   key={s.id}
                   onClick={() => setSelectedSlot(s.id)}
-                  className={`p-4 rounded-xl border-2 transition-all ${selectedSlot === s.id ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-100 hover:border-blue-200 text-gray-700'}`}
+                  className={`p-4 rounded-xl border-2 transition-all text-left ${selectedSlot === s.id ? 'border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-100' : 'border-gray-100 hover:border-blue-200 text-gray-700'}`}
                 >
-                  <p className="font-bold">{s.time}</p>
-                  <p className="text-xs">{s.date}</p>
-                  <p className="text-sm mt-2 font-semibold">Bond: ${s.bondAmount}</p>
+                  <p className="font-bold text-lg">{s.time}</p>
+                  <p className="text-xs uppercase opacity-60 font-semibold">{s.date}</p>
+                  <p className="text-sm mt-3 font-bold text-blue-600">${s.bondAmount}</p>
                 </button>
               ))
             )}
           </div>
 
-          <h2 className="text-xl font-bold mb-6">2. Your Details</h2>
+          <h2 className="text-xl font-bold mb-6 flex items-center text-gray-800">
+            <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3 text-sm">2</span>
+            Your Details
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-            <input 
-              required 
-              type="text" 
-              placeholder="Full Name" 
-              value={customer.name}
-              onChange={e => setCustomer({...customer, name: e.target.value})}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none" 
-            />
-            <input 
-              required 
-              type="email" 
-              placeholder="Email Address" 
-              value={customer.email}
-              onChange={e => setCustomer({...customer, email: e.target.value})}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none" 
-            />
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Name</label>
+              <input 
+                required 
+                type="text" 
+                placeholder="John Doe" 
+                value={customer.name}
+                onChange={e => setCustomer({...customer, name: e.target.value})}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Email</label>
+              <input 
+                required 
+                type="email" 
+                placeholder="john@example.com" 
+                value={customer.email}
+                onChange={e => setCustomer({...customer, email: e.target.value})}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-100 p-6 rounded-2xl mb-8 flex items-start gap-4">
-            <ShieldCheck className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-1" />
+          <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl mb-8 flex items-start gap-4">
+            <ShieldCheck className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
             <div>
-              <p className="font-bold text-yellow-800">Refundable Attendance Bond</p>
-              <p className="text-sm text-yellow-700">
-                A secure bond is required to confirm your booking. This amount will be automatically refunded to your original payment method immediately after you attend your appointment.
+              <p className="font-bold text-blue-900">Paystack Protected</p>
+              <p className="text-sm text-blue-800 leading-relaxed">
+                Your attendance bond is held securely. It will be <strong>automatically refunded</strong> once the business confirms your attendance.
               </p>
             </div>
           </div>
 
           <button 
-            disabled={!selectedSlot || !customer.name || isPaying}
-            onClick={handleBooking}
-            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            disabled={!selectedSlot || !customer.name || !customer.email || isProcessing}
+            onClick={handlePaystackPayment}
+            className="w-full py-4 bg-[#09a5db] text-white rounded-xl font-bold text-lg hover:bg-[#0895c5] transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1"
           >
-            {isPaying ? (
-              <>Processing Secure Payment...</>
+            {isProcessing ? (
+              <span className="animate-pulse">Opening Paystack...</span>
             ) : (
               <>
-                <CreditCard className="mr-2 w-5 h-5" /> 
-                {selectedSlot ? `Pay $${slots.find(s => s.id === selectedSlot)?.bondAmount} & Book` : 'Select a Slot'}
+                <div className="flex items-center">
+                  <CreditCard className="mr-2 w-5 h-5" /> 
+                  {selectedSlot ? `Pay $${slots.find(s => s.id === selectedSlot)?.bondAmount} & Confirm` : 'Complete the form'}
+                </div>
+                <span className="text-[10px] opacity-80 font-normal uppercase tracking-widest">Powered by Paystack</span>
               </>
             )}
           </button>
+          
+          <div className="mt-4 flex items-center justify-center text-gray-400 text-[10px] uppercase tracking-tighter">
+            <AlertCircle className="w-3 h-3 mr-1" />
+            This is a Paystack Test Mode demonstration. No real funds will be moved.
+          </div>
         </div>
       </div>
     </div>
@@ -448,53 +513,61 @@ const AdminPanel: React.FC = () => {
     <div className="max-w-6xl mx-auto py-10 px-4">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Admin Panel</h1>
-        <button onClick={clearData} className="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-semibold hover:bg-red-200">
+        <button onClick={clearData} className="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-semibold hover:bg-red-200 transition-colors">
           Wipe Database
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-        <div className="bg-white p-6 rounded-2xl border border-gray-200">
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
           <p className="text-gray-500 text-sm">Businesses</p>
           <p className="text-2xl font-bold">{store.businesses.length}</p>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-200">
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
           <p className="text-gray-500 text-sm">Active Bonds</p>
-          <p className="text-2xl font-bold">${totalBondsHeld.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-blue-600">${totalBondsHeld.toFixed(2)}</p>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-200">
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
           <p className="text-gray-500 text-sm">Platform Profit</p>
           <p className="text-2xl font-bold text-green-600">${platformRevenue.toFixed(2)}</p>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-200">
-          <p className="text-gray-500 text-sm">No-Show Fee %</p>
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+          <p className="text-gray-500 text-sm font-semibold text-blue-500">Global Fee %</p>
           <input 
             type="number" 
             value={store.platformFee} 
             onChange={(e) => updateFee(e.target.value)}
-            className="text-2xl font-bold w-full outline-none focus:text-blue-600"
+            className="text-2xl font-bold w-full outline-none focus:text-blue-600 bg-transparent"
           />
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
         <table className="w-full text-left">
           <thead className="bg-gray-50">
             <tr>
               <th className="p-4 font-bold text-sm text-gray-500">Business</th>
               <th className="p-4 font-bold text-sm text-gray-500">Type</th>
-              <th className="p-4 font-bold text-sm text-gray-500">Bookings</th>
-              <th className="p-4 font-bold text-sm text-gray-500">Status</th>
+              <th className="p-4 font-bold text-sm text-gray-500 text-center">Bookings</th>
+              <th className="p-4 font-bold text-sm text-gray-500">Key Status</th>
+              <th className="p-4 font-bold text-sm text-gray-500">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {store.businesses.map(b => (
-              <tr key={b.id}>
+              <tr key={b.id} className="hover:bg-gray-50 transition-colors">
                 <td className="p-4 font-medium">{b.name}</td>
-                <td className="p-4 text-gray-500">{b.type}</td>
-                <td className="p-4">{store.bookings.filter(bk => bk.businessId === b.id).length}</td>
+                <td className="p-4 text-gray-500 text-sm">{b.type}</td>
+                <td className="p-4 text-center font-bold">{store.bookings.filter(bk => bk.businessId === b.id).length}</td>
                 <td className="p-4">
-                  <Link to={`/business/dashboard/${b.id}`} className="text-blue-600 hover:underline">View Dashboard</Link>
+                  {b.paystackPublicKey ? (
+                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded font-bold uppercase">Custom</span>
+                  ) : (
+                    <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-1 rounded font-bold uppercase">Default</span>
+                  )}
+                </td>
+                <td className="p-4">
+                  <Link to={`/business/dashboard/${b.id}`} className="text-blue-600 hover:text-blue-800 font-semibold text-sm">Dashboard</Link>
                 </td>
               </tr>
             ))}
@@ -510,7 +583,7 @@ const AdminPanel: React.FC = () => {
 const App: React.FC = () => {
   return (
     <HashRouter>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col selection:bg-blue-100 selection:text-blue-900">
         <Navbar />
         <main className="flex-grow">
           <Routes>
@@ -522,9 +595,15 @@ const App: React.FC = () => {
             <Route path="/admin" element={<AdminPanel />} />
           </Routes>
         </main>
-        <footer className="bg-white border-t border-gray-200 py-8">
-          <div className="max-w-7xl mx-auto px-4 text-center text-gray-400 text-sm">
-            <p>&copy; 2025 NoShowPay MVP. Secure bonds for serious businesses.</p>
+        <footer className="bg-white border-t border-gray-200 py-12">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-4">
+            <div className="flex items-center space-x-2 text-gray-400 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
+              <span className="text-xs uppercase tracking-widest font-bold">Payments by</span>
+              <img src="https://paystack.com/assets/img/login/paystack-logo.png" alt="Paystack" className="h-4" />
+            </div>
+            <div className="text-center text-gray-400 text-sm">
+              <p>&copy; 2025 NoShowPay MVP. Secure bonds for serious businesses.</p>
+            </div>
           </div>
         </footer>
       </div>

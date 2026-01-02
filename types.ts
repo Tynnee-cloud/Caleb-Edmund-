@@ -8,6 +8,7 @@ export interface Business {
   location: string;
   payoutDetails: string;
   email: string;
+  paystackPublicKey?: string; // New field for Paystack integration
 }
 
 export type SlotStatus = 'available' | 'booked' | 'completed';
@@ -31,6 +32,7 @@ export interface Booking {
   status: BookingStatus;
   amount: number;
   timestamp: number;
+  paystackReference?: string; // Track payment reference
 }
 
 export interface AppState {
